@@ -5,7 +5,7 @@
   const inputVolumeBar = document.getElementById("input-volume");
   const volumeIndicators = document.getElementById("volume-indicators");
   const callButton = document.getElementById("button-call");
-  const outgoingCallHangupButton = document.getElementById("button-hangup-outgoing");
+  const outgoingCallHangupButton = document.getElementById("hangup");
   const callControlsDiv = document.getElementById("call-controls");
   const audioSelectionDiv = document.getElementById("output-selection");
   const getAudioDevicesButton = document.getElementById("get-devices");
@@ -26,13 +26,37 @@
 
   let device;
   let token;
+  let callStarted=false;
 
   // Event Listeners
 
   callButton.onclick = (e) => {
     e.preventDefault();
+    callButton.classList.add("hide");
+    outgoingCallHangupButton.classList.remove("hide");
     makeOutgoingCall();
+    console.log(e);
   };
+  // Digits button logic for dialpad
+  $(".digit").on('click', function() {
+    var input = document.getElementById("phone-number");
+    var current = input.value;
+    var num = ($(this).clone().children().remove().end().text());
+    input.value = current + num.trim();
+    console.log(callStarted);
+    if (callStarted == true) {
+      var dtmf = num.trim();
+      dtmf = dtmf.toString();
+      console.log(dtmf);
+      call.sendDigits(dtmf);
+    }
+  });
+  $('.fa-long-arrow-left').on('click', function() {
+    var input = document.getElementById("phone-number");
+    var current = input.value;
+    var newVal = current.slice(0, -1);
+    input.value = newVal;
+  });  
   getAudioDevicesButton.onclick = getAudioDevices;
   speakerDevices.addEventListener("change", updateOutputDevice);
   ringtoneDevices.addEventListener("change", updateRingtoneDevice);
@@ -69,6 +93,8 @@
       // Set Opus as our preferred codec. Opus generally performs better, requiring less bandwidth and
       // providing better audio quality in restrained network conditions.
       codecPreferences: ["opus", "pcmu"],
+      //allow incoming calls while busy
+      allowIncomingWhileBusy: true,
     });
 
     addDeviceListeners(device);
@@ -135,6 +161,7 @@
     outgoingCallHangupButton.classList.remove("hide");
     volumeIndicators.classList.remove("hide");
     bindVolumeIndicators(call);
+    callStarted=true;
   }
 
   function updateUIDisconnectedOutgoingCall() {
@@ -142,6 +169,7 @@
     callButton.disabled = false;
     outgoingCallHangupButton.classList.add("hide");
     volumeIndicators.classList.add("hide");
+    callStarted=false;
   }
 
   // HANDLE INCOMING CALL
@@ -182,6 +210,7 @@
     incomingCallAcceptButton.classList.add("hide");
     incomingCallRejectButton.classList.add("hide");
     incomingCallHangupButton.classList.remove("hide");
+    callStarted=true;
   }
 
   // REJECT INCOMING CALL
